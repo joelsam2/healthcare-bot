@@ -219,89 +219,6 @@ extern uint32_t distance_4;
 extern volatile uint32_t final_value[5];
 
 
-
-void calculate_heart_beat(int adc_value) {
-
-    Signal = adc_value;
-    HAL_UART_Transmit(&huart3, "IN\n", 4, HAL_MAX_DELAY);
-
-    sampleCounter += 2; // keep track of the time in mS with this variable
-    int N = sampleCounter - lastBeatTime; // monitor the time since the last beat to avoid noise
-
-    //  find the peak and trough of the pulse wave
-    if (Signal < thresh && N > (IBI / 5)*3) { // avoid dichrotic noise by waiting 3/5 of last IBI
-        if (Signal < T) { // T is the trough
-            T = Signal; // keep track of lowest point in pulse wave
-        }
-    }
-
-    if (Signal > thresh && Signal > P) { // thresh condition helps avoid noise
-        P = Signal; // P is the peak
-    } // keep track of highest point in pulse wave
-
-    //  NOW IT'S TIME TO LOOK FOR THE HEART BEAT
-    // signal surges up in value every time there is a pulse
-    if (N > 250) { // avoid high frequency noise
-        if ((Signal > thresh) && (Pulse == false) && (N > (IBI / 5)*3)) {
-            Pulse = true; // set the Pulse flag when we think there is a pulse
-            IBI = sampleCounter - lastBeatTime; // measure time between beats in mS
-            lastBeatTime = sampleCounter; // keep track of time for next pulse
-
-            if (secondBeat) { // if this is the second beat, if secondBeat == TRUE
-                secondBeat = false; // clear secondBeat flag
-                int i;
-                for (i = 0; i <= 9; i++) { // seed the running total to get a realisitic BPM at startup
-                    rate[i] = IBI;
-                }
-            }
-
-            if (firstBeat) { // if it's the first time we found a beat, if firstBeat == TRUE
-                firstBeat = false; // clear firstBeat flag
-                secondBeat = true; // set the second beat flag
-                //pulse_tmr_handle = bsp_harmony_start_tmr_cb_periodic(PULSE_CHECK_TIME_INTERVAL, 0, pulse_read_cb); // enable interrupts again
-                return; // IBI value is unreliable so discard it
-            }
-
-            // keep a running total of the last 10 IBI values
-            uint16_t runningTotal = 0; // clear the runningTotal variable
-            int i;
-            for (i = 0; i <= 8; i++) { // shift data in the rate array
-                rate[i] = rate[i + 1]; // and drop the oldest IBI value
-                runningTotal += rate[i]; // add up the 9 oldest IBI values
-            }
-
-            rate[9] = IBI; // add the latest IBI to the rate array
-            runningTotal += rate[9]; // add the latest IBI to runningTotal
-            runningTotal /= 10; // average the last 10 IBI values
-            BPM = 60000 / runningTotal; // how many beats can fit into a minute? that's BPM!
-            QS = true; // set Quantified Self flag
-            // QS FLAG IS NOT CLEARED INSIDE THIS ISR
-            char buff[25];
-            sprintf(buff, "bpm: %d\r\n", BPM);
-            						  					HAL_UART_Transmit(&huart3, buff, strlen(buff), HAL_MAX_DELAY);
-        }
-    }
-if (Signal < thresh && Pulse == true) { // when the values are going down, the beat is over
-        Pulse = false; // reset the Pulse flag so we can do it again
-        amp = P - T; // get amplitude of the pulse wave
-        thresh = amp / 2 + T; // set thresh at 50% of the amplitude
-        P = thresh; // reset these for next time
-        T = thresh;
-    }
-
-    if (N > 2500) { // if 2.5 seconds go by without a beat
-        thresh = 530; // set thresh default
-        P = 512; // set P default
-        T = 512; // set T default
-        lastBeatTime = sampleCounter; // bring the lastBeatTime up to date
-        firstBeat = true; // set these to avoid noise
-        secondBeat = false; // when we get the heartbeat back
-    }
-
-}
-
-
-
 void Ultrasonic_Read(int sensor_number)
 {
   if (sensor_number == 1)
@@ -491,9 +408,6 @@ int main(void)
 	                  int x1 = BPM;
 	                  sprintf(buff, "HR: %d\r\n", x1);
 					  HAL_UART_Transmit(&huart3, buff, strlen(buff), HAL_MAX_DELAY); // transmit uart3
-
-
-
 	              }
 	          }
 
