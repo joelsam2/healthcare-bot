@@ -1,3 +1,3 @@
 # healthcare-bot
 
-Master Project. Using hal lib and stm32
+Masters Project. Using STM32 controllers
