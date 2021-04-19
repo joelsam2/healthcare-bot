@@ -156,15 +156,4 @@ void gps_extract(void) {
 }
 
 
-/*
-Tom - Morning 
-UART - bluetooth (UL1,2,3 & GPS).
-Read compass sensor stuff
-Integrate compass sensor (just get values.)
-
-Sunday- 
-study way point algo + integrate.
-
-
-*/
 
