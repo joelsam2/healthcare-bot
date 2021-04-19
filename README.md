@@ -1,3 +1,3 @@
 # healthcare-bot
 
-Masters Project. Using STM32 controllers
+Masters Project. Using STM32 controllers and FreeRTOS
